@@ -1,0 +1,58 @@
+@startuml sequence
+skinparam defaultFontName "Hiragino Sans"
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam BoxPadding 8
+hide footbox
+
+actor "利用者\n（ブラウザ）" as User
+participant "Claude / ChatGPT\n（MCP クライアント）" as Client
+participant "食事記録\n（MCP サーバー）" as Meals
+participant "認可API" as Authz
+participant "Cognito\n（ログイン画面）" as Cognito
+database "DynamoDB" as DB
+
+== 1. 接続の準備（どこでログインするかを知る） ==
+Client -> Meals : POST /mcp（トークンなし）
+Meals --> Client : 401（WWW-Authenticate に resource_metadata の URL）
+Client -> Meals : GET /.well-known/oauth-protected-resource
+Meals --> Client : 認可サーバー＝認可API
+Client -> Authz : GET /.well-known/oauth-authorization-server
+Authz --> Client : authorize・token・revoke の URL など
+
+== 2. ログインと同意 ==
+Client -> User : ブラウザで認可API を開く
+User -> Authz : GET /authorize\n（client_id＝CIMD の URL、PKCE の code_challenge、resource＝/mcp）
+Authz -> Client : クライアント情報（CIMD）を取得
+Client --> Authz : redirect_uris など
+Authz --> User : Cognito のログイン画面へ転送
+User -> Cognito : メールアドレスとパスワードでログイン
+Cognito --> User : 認可API の /cognito/callback へ転送（Cognito の認可コード）
+User -> Authz : GET /cognito/callback
+Authz -> Cognito : 認可コードを ID トークンに交換（クライアントシークレット）
+Cognito --> Authz : ID トークン（だれがログインしたか）
+Authz --> User : 同意画面（どのアプリに、何を許すか）
+User -> Authz : POST /consent（許可する）
+Authz --> User : クライアントの redirect_uri へ転送（認可コード）
+User -> Client : 認可コードを渡す
+
+== 3. トークンの発行 ==
+Client -> Authz : POST /token（認可コード、code_verifier）
+Authz -> Authz : PKCE を確かめる
+Authz --> Client : アクセストークン（JWT、5分）\nリフレッシュトークン
+
+== 4. ツールの呼び出し ==
+Client -> Meals : POST /mcp（Authorization: Bearer アクセストークン）
+Meals -> Authz : GET /.well-known/jwks.json（初回だけ。公開鍵を取得）
+Authz --> Meals : 公開鍵
+Meals -> Meals : 署名・期限・aud（/mcp）・scope を確かめる
+Meals -> DB : 食事を読み書きする（pk＝食べた人）
+DB --> Meals : 結果
+Meals --> Client : ツールの結果（JSON）
+Client --> User : 表やグラフで見せる
+
+== 5. アクセストークンの期限が切れたとき ==
+Client -> Authz : POST /token（grant_type=refresh_token）
+Authz -> Authz : 古いリフレッシュトークンを使用済みにする\n（使用済みのものが再び届いたら、同じ系列をすべて無効にする）
+Authz --> Client : 新しいアクセストークンと、新しいリフレッシュトークン
+@enduml

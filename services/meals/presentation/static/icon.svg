@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#1f6f5c"/>
+  <!-- 箸 -->
+  <path d="M34 10 L50 30" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M41 9 L54 28" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- ごはん -->
+  <path d="M17 33 C19 25, 26 22, 32 22 C38 22, 45 25, 47 33 Z" fill="#ffffff" opacity="0.85"/>
+  <!-- お茶碗 -->
+  <path d="M12 33 H52 C52 44, 43 51, 32 51 C21 51, 12 44, 12 33 Z" fill="#ffffff"/>
+  <rect x="25" y="51" width="14" height="4" rx="2" fill="#ffffff"/>
+</svg>

@@ -1,0 +1,21 @@
+[project]
+name = "meals"
+version = "0.1.0"
+description = "食事記録コンテキスト（MCP サーバー）"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=2.3.0",
+    "pyjwt[crypto]>=2.15.1",
+    "uvicorn>=0.54.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "boto3>=1.43.111",
+    "moto>=5.2.4",
+    "pytest>=9.1.1",
+]
